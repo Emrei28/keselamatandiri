@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Tebak Rambu — Cocokkan Rambu Lalu Lintas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-top:#EAF2FF;
+    --bg-bottom:#DCEBFF;
+    --asphalt:#33363F;
+    --asphalt-soft:#4B4F5B;
+    --yellow:#FFCB05;
+    --yellow-deep:#E6B400;
+    --red:#E63946;
+    --red-deep:#C62834;
+    --blue:#1D63C7;
+    --blue-deep:#124A9C;
+    --green:#3FB871;
+    --green-deep:#2C9257;
+    --navy:#22303A;
+    --navy-soft:#5B6B76;
+    --cream:#FFFDF8;
+    --white:#FFFFFF;
+    --shadow-soft: 0 8px 0 rgba(34,48,58,0.12);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+  html,body{ margin:0; padding:0; height:100%; font-family:'Nunito', sans-serif; color:var(--navy); overflow-x:hidden; }
+
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 6%, rgba(255,255,255,0.7) 0%, transparent 38%),
+      radial-gradient(circle at 90% 4%, rgba(255,255,255,0.55) 0%, transparent 34%),
+      linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+
+  h1,h2,h3{ font-family:'Fredoka', sans-serif; margin:0; }
+
+  .stage{ width:100%; max-width:460px; position:relative; }
+
+  .cloud{ position:fixed; background:#fff; border-radius:50px; opacity:0.75; pointer-events:none; z-index:0; }
+  .cloud::before, .cloud::after{ content:""; position:absolute; background:#fff; border-radius:50%; }
+  .c1{ width:80px; height:28px; top:5%; left:6%; }
+  .c1::before{ width:44px; height:44px; top:-20px; left:6px; }
+  .c1::after{ width:32px; height:32px; top:-14px; left:40px; }
+  .c2{ width:64px; height:24px; top:10%; right:8%; }
+  .c2::before{ width:34px; height:34px; top:-16px; left:6px; }
+  .c2::after{ width:26px; height:26px; top:-10px; left:30px; }
+
+  .screen{ position:relative; z-index:1; display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- START ---------- */
+  #start.active{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding-top:5vh; }
+  .badge-title{
+    font-family:'Fredoka'; font-weight:700; font-size:13px; letter-spacing:1.3px;
+    color:var(--blue-deep); background:var(--white); padding:6px 15px; border-radius:20px;
+    box-shadow:var(--shadow-soft); text-transform:uppercase;
+  }
+  #start h1{ font-size:38px; color:var(--navy); line-height:1.08; text-shadow:2px 2px 0 rgba(255,255,255,0.6); }
+  #start h1 span{ color:var(--red-deep); }
+  .mascot-big{ font-size:96px; animation: float 3.2s ease-in-out infinite; filter: drop-shadow(0 10px 8px rgba(34,48,58,0.18)); }
+  @keyframes float{ 0%,100%{ transform: translateY(0) rotate(-3deg); } 50%{ transform: translateY(-12px) rotate(3deg); } }
+  #start p.desc{ font-size:15.5px; font-weight:700; color:var(--navy-soft); max-width:320px; line-height:1.5; }
+  .mini-icons{ display:flex; gap:8px; font-size:22px; flex-wrap:wrap; justify-content:center; }
+  .mini-icons span{ background:var(--white); border-radius:14px; padding:7px 9px; box-shadow:var(--shadow-soft); }
+  .rule-box{
+    background:var(--white); border-radius:16px; padding:12px 16px; box-shadow:var(--shadow-soft);
+    font-weight:800; font-size:13.5px; color:var(--navy-soft); max-width:300px; line-height:1.5;
+  }
+
+  .btn{
+    font-family:'Fredoka'; font-weight:600; font-size:18px; border:none; border-radius:22px;
+    padding:15px 34px; cursor:pointer; color:var(--white); background:var(--blue);
+    box-shadow:0 7px 0 var(--blue-deep); transition: transform .08s ease, opacity .2s ease;
+  }
+  .btn:active{ transform: translateY(5px); box-shadow:0 2px 0 var(--blue-deep); }
+  .btn.alt{ background:var(--green); box-shadow:0 7px 0 var(--green-deep); }
+  .btn.alt:active{ box-shadow:0 2px 0 var(--green-deep); }
+  .btn:disabled{ background:#B0BEC5; box-shadow:0 7px 0 #78909C; cursor:not-allowed; opacity:0.7; transform:none; }
+
+  /* ---------- GAME ---------- */
+  #game.active{ display:flex; flex-direction:column; align-items:center; gap:12px; }
+
+  .topbar{ width:100%; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .pill{
+    background:var(--white); border-radius:16px; padding:8px 13px; font-weight:800; font-size:13px;
+    box-shadow:var(--shadow-soft); display:flex; align-items:center; gap:5px; white-space:nowrap;
+  }
+  .pill .num{ color:var(--red-deep); font-family:'Fredoka'; font-size:15px; }
+
+  .instruction{
+    font-weight:800; font-size:13px; color:var(--navy-soft); text-align:center;
+    background:var(--white); border-radius:14px; padding:8px 14px; box-shadow:var(--shadow-soft);
+  }
+
+  .board-header {
+    width: 100%;
+    max-width: 430px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+  .col-label {
+    font-family: 'Fredoka'; font-weight: 600; font-size: 11.5px; letter-spacing: 0.5px;
+    color: var(--navy-soft); text-transform: uppercase; text-align: center;
+  }
+  .col-label.left { width: 80px; }
+  .col-label.right { flex: 1; text-align: center; }
+
+  .board-container {
+    width: 100%;
+    max-width: 430px;
+    display: flex;
+    position: relative;
+    justify-content: space-between;
+    touch-action: none;
+  }
+
+  #lineCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 1;
+  }
+  .col#signCol { width: 100px; flex-shrink: 0; }
+  .col#meaningCol { width: 230px; flex-shrink: 0; }
+
+  .sign-card, .meaning-card {
+    background: var(--white);
+    border: 3px solid #E7E1D2;
+    border-radius: 16px;
+    cursor: grab;
+    transition: transform .1s ease, border-color .15s ease, box-shadow .15s ease, background .2s ease;
+    box-shadow: 0 4px 0 rgba(34,48,58,0.08);
+    height: 64px; 
+    box-sizing: border-box;
+    user-select: none;
+    position: relative;
+  }
+
+  .sign-card {
+    width: 80px;
+    padding: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Style Gambar Rambu */
+  .sign-card img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    pointer-events: none; /* Supaya drag event tidak terganggu gambar */
+  }
+
+  .meaning-card {
+    padding: 8px 12px 8px 18px;
+    display: flex; align-items: center;
+    font-family: 'Nunito'; font-weight: 800; font-size: 11.5px; color: var(--navy);
+    line-height: 1.25;
+  }
+
+  /* Titik Konektor (Dots) */
+  .connect-dot {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 3px solid var(--navy-soft);
+    top: 50%;
+    transform: translateY(-50%);
+    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+    z-index: 2;
+  }
+
+  .sign-card .connect-dot {
+    right: -20px;
+  }
+
+  .meaning-card .connect-dot {
+    left: -20px;
+  }
+
+  .sign-card.dragging, .sign-card.dragging .connect-dot {
+    border-color: var(--blue);
+  }
+
+  .sign-card.dragging .connect-dot {
+    background: var(--blue);
+    transform: translateY(-50%) scale(1.3);
+  }
+
+  .meaning-card.hovered, .meaning-card.hovered .connect-dot {
+    border-color: var(--blue);
+  }
+
+  .meaning-card.hovered .connect-dot {
+    background: var(--blue);
+    transform: translateY(-50%) scale(1.3);
+  }
+
+  /* Status Warna Titik & Kartu */
+  .sign-card.connected .connect-dot, .meaning-card.connected .connect-dot {
+    background: var(--blue);
+    border-color: var(--blue-deep);
+  }
+
+  .sign-card.correct, .meaning-card.correct {
+    border-color: var(--green-deep) !important;
+    background: #E9FAF0 !important;
+  }
+  .sign-card.correct .connect-dot, .meaning-card.correct .connect-dot {
+    background: var(--green);
+    border-color: var(--green-deep);
+  }
+
+  .sign-card.wrong, .meaning-card.wrong {
+    border-color: var(--red-deep) !important;
+    background: #FFEBEB !important;
+  }
+  .sign-card.wrong .connect-dot, .meaning-card.wrong .connect-dot {
+    background: var(--red);
+    border-color: var(--red-deep);
+  }
+
+  .sign-card.matched, .meaning-card.matched {
+    opacity: 0.85; cursor: default; box-shadow: none;
+    pointer-events: none;
+  }
+
+  .sign-card.shake, .meaning-card.shake {
+    animation: shake .4s ease;
+  }
+
+  @keyframes shake {
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-6px); }
+    40%{ transform:translateX(6px); }
+    60%{ transform:translateX(-4px); }
+    80%{ transform:translateX(4px); }
+  }
+
+  .action-area {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .mascot-row {
+    display:flex; align-items:center; gap:10px; background:var(--white); border-radius:20px;
+    padding:9px 15px; box-shadow:var(--shadow-soft); min-height:24px; width:100%;
+  }
+  .mascot-row .face { font-size:27px; flex-shrink:0; }
+  .mascot-row .say { font-weight:800; font-size:13px; color:var(--navy-soft); }
+
+  /* ---------- OVERLAY ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(34,48,58,0.45); display:none;
+    align-items:center; justify-content:center; z-index:20; padding:16px; backdrop-filter: blur(2px);
+  }
+  .overlay.active{ display:flex; }
+  .modal{
+    background:var(--cream); border-radius:28px; width:100%; max-width:360px; padding:26px 22px;
+    text-align:center; box-shadow:0 16px 0 rgba(34,48,58,0.15), 0 20px 40px rgba(0,0,0,0.25);
+    animation: pop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{ from{ transform:scale(0.7); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .modal .emoji-big{ font-size:56px; margin-bottom:6px; }
+  .modal h3{ font-size:20px; margin-bottom:8px; }
+  .modal p{ font-weight:800; color:var(--navy-soft); font-size:14px; margin-bottom:16px; }
+
+  /* ---------- END ---------- */
+  #end.active{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding-top:5vh; }
+  #end .trophy{ font-size:86px; animation: float 3s ease-in-out infinite; }
+  #end h2{ font-size:25px; }
+  .stars-row{ font-size:32px; letter-spacing:6px; margin:2px 0 4px; }
+  .score-box{
+    background:var(--white); border-radius:20px; padding:14px 24px; box-shadow:var(--shadow-soft);
+    font-family:'Fredoka'; font-weight:600; font-size:15px;
+  }
+  .score-box .big{ font-size:28px; color:var(--red-deep); }
+  #end p.msg{ font-weight:800; color:var(--navy-soft); max-width:290px; }
+
+  .confetti{ position:fixed; top:-10px; z-index:50; border-radius:2px; pointer-events:none; animation: fall linear forwards; }
+  @keyframes fall{ to{ transform: translateY(105vh) rotate(600deg); opacity:0.9; } }
+
+  @media (max-width:360px){
+    #start h1{ font-size:32px; }
+    .mascot-big{ font-size:80px; }
+    .col#meaningCol { width: 190px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .mascot-big, #end .trophy{ animation:none; }
+    .sign-card.shake, .meaning-card.shake{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cloud c1"></div>
+<div class="cloud c2"></div>
+
+<div class="stage">
+
+  <!-- START SCREEN -->
+  <section id="start" class="screen active">
+    <span class="badge-title">Ayo Belajar Sambil Main</span>
+    <h1>Tebak <span>Rambu</span></h1>
+    <div class="mascot-big">🚸</div>
+    <p class="desc">Tarik garis dari titik rambu di kiri ke titik artinya di kanan!</p>
+    <div class="mini-icons">
+      <span>🚦</span><span>🚶</span><span>🅿️</span><span>⛔</span><span>🎒</span>
+    </div>
+    <div class="rule-box">Tarik garis antar titik untuk menghubungkan kelima rambu, lalu cek jawabanmu!</div>
+    <button class="btn" id="startBtn">🚗 Mulai Main!</button>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="game" class="screen">
+    <div class="topbar">
+      <div class="pill">🧩 Papan <span class="num" id="roundNum">1</span>/<span id="roundTotal">2</span></div>
+      <div class="pill">✅ Terhubung <span class="num" id="connectedNum">0</span>/<span id="matchTotal">5</span></div>
+    </div>
+    <div class="instruction">Hubungkan titik rambu ke titik artinya</div>
+
+    <div class="board-header">
+      <div class="col-label left">Rambu</div>
+      <div class="col-label right">Artinya</div>
+    </div>
+
+    <div class="board-container" id="boardContainer">
+      <canvas id="lineCanvas"></canvas>
+      <div class="col" id="signCol"></div>
+      <div class="col" id="meaningCol"></div>
+    </div>
+
+    <div class="action-area">
+      <button class="btn alt" id="checkBtn" disabled>🔍 Cek Jawaban</button>
+    </div>
+
+    <div class="mascot-row">
+      <div class="face" id="mascotFace">😊</div>
+      <div class="say" id="mascotSay">Tarik garis antar titik untuk menyatukan rambu!</div>
+    </div>
+  </section>
+
+  <!-- END SCREEN -->
+  <section id="end" class="screen">
+    <div class="trophy">🏆</div>
+    <h2>Semua Rambu Cocok!</h2>
+    <div class="stars-row" id="starsRow">⭐⭐⭐</div>
+    <div class="score-box">Salah tebak: <span class="big" id="finalMistakes">0</span> kali</div>
+    <p class="msg" id="finalMsg">Kamu jago mengenal rambu lalu lintas!</p>
+    <button class="btn" id="againBtn">🔁 Main Lagi</button>
+  </section>
+
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="emoji-big">🎉</div>
+    <h3 id="modalTitle">Papan 1 Selesai!</h3>
+    <p id="modalText">Semua rambu di papan ini berhasil dicocokkan.</p>
+    <button class="btn alt" id="modalNextBtn">Lanjut ➜</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- DATA GAMBAR RAMBU ---------------- 
+     Silakan ganti properti 'img' dengan URL/path file gambar milikmu.
+  */
+  const signPool = [
+    { id:"parkir",   img:"img/Parkir.jpg", meaning:"Dilarang parkir kendaraan di sini" },
+    { id:"berhenti", img:"img/Stop.png", meaning:"Dilarang berhenti di sini" },
+    { id:"masuk",    img:"img/Dmasuk.jpg", meaning:"Dilarang masuk, jalan tertutup" },
+    { id:"putar",    img:"img/Balik.png", meaning:"Dilarang putar balik" },
+    { id:"nyebrang", img:"img/Zebracros.png", meaning:"Tempat penyeberangan orang (zebra cross)" },
+    { id:"hati2",    img:"img/hatihati.jpeg", meaning:"Hati-hati, ada bahaya di depan" },
+    { id:"sekolah",  img:"img/zoss.jpeg", meaning:"Hati-hati, dekat kawasan sekolah" },
+    { id:"lampu",    img:"img/lampu.jpg", meaning:"Ikuti lampu lalu lintas" },
+    { id:"sepeda",   img:"img/sepeda.jpeg", meaning:"Jalur khusus sepeda" },
+    { id:"lurus",    img:"img/lurus.jpeg", meaning:"Wajib jalan lurus, tidak boleh belok" }
+  ];
+
+  const PER_ROUND = 5;
+  const ROUNDS = 2;
+
+  /* ---------------- STATE ---------------- */
+  let roundsData = [];
+  let currentRound = 0;
+  let mistakes = 0;
+
+  // Drag & Connection State
+  let isDragging = false;
+  let activeSignEl = null;
+  let currentTouchPos = { x: 0, y: 0 };
+  let connections = []; 
+
+  /* ---------------- DOM ---------------- */
+  const startScreen = document.getElementById('start');
+  const gameScreen = document.getElementById('game');
+  const endScreen = document.getElementById('end');
+  const signCol = document.getElementById('signCol');
+  const meaningCol = document.getElementById('meaningCol');
+  const roundNumEl = document.getElementById('roundNum');
+  const connectedNumEl = document.getElementById('connectedNum');
+  const checkBtn = document.getElementById('checkBtn');
+  const mascotFace = document.getElementById('mascotFace');
+  const mascotSay = document.getElementById('mascotSay');
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalText = document.getElementById('modalText');
+  const modalNextBtn = document.getElementById('modalNextBtn');
+  const boardContainer = document.getElementById('boardContainer');
+  const canvas = document.getElementById('lineCanvas');
+  const ctx = canvas.getContext('2d');
+
+  document.getElementById('roundTotal').textContent = ROUNDS;
+  document.getElementById('matchTotal').textContent = PER_ROUND;
+
+  /* ---------------- HELPERS ---------------- */
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function spawnConfetti(count){
+    const colors = ['#FFCB05','#E63946','#1D63C7','#3FB871','#33363F'];
+    for(let i=0;i<count;i++){
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      const size = 6 + Math.random()*6;
+      el.style.width = size+'px';
+      el.style.height = (size*0.4+4)+'px';
+      el.style.left = (Math.random()*100)+'vw';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      const dur = 1.5 + Math.random()*1.1;
+      el.style.animationDuration = dur+'s';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), dur*1000+100);
+    }
+  }
+
+  /* ---------------- CANVAS & GARIS DARI TITIK DOT ---------------- */
+  function resizeCanvas() {
+    const rect = boardContainer.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    drawLines();
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  function getDotCenter(cardEl) {
+    const boardRect = boardContainer.getBoundingClientRect();
+    const dot = cardEl.querySelector('.connect-dot');
+    const rect = dot.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2 - boardRect.left,
+      y: rect.top + rect.height / 2 - boardRect.top
+    };
+  }
+
+  function drawLines() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    connections.forEach(conn => {
+      const start = getDotCenter(conn.fromEl);
+      const end = getDotCenter(conn.toEl);
+      
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+
+      if (conn.status === 'correct') {
+        ctx.strokeStyle = '#3FB871';
+        ctx.lineWidth = 5;
+      } else if (conn.status === 'wrong') {
+        ctx.strokeStyle = '#E63946';
+        ctx.lineWidth = 5;
+      } else {
+        ctx.strokeStyle = '#1D63C7';
+        ctx.lineWidth = 4;
+      }
+
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    });
+
+    if (isDragging && activeSignEl) {
+      const start = getDotCenter(activeSignEl);
+      
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(currentTouchPos.x, currentTouchPos.y);
+      ctx.strokeStyle = '#1D63C7';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([8, 6]);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  /* ---------------- SETUP GAME ---------------- */
+  function prepareGame(){
+    const shuffled = shuffle(signPool);
+    roundsData = [];
+    for(let r=0;r<ROUNDS;r++){
+      roundsData.push(shuffled.slice(r*PER_ROUND, (r+1)*PER_ROUND));
+    }
+    currentRound = 0;
+    mistakes = 0;
+  }
+
+  function startRound(idx){
+    connections = [];
+    isDragging = false;
+    activeSignEl = null;
+
+    roundNumEl.textContent = idx+1;
+    connectedNumEl.textContent = 0;
+    checkBtn.disabled = true;
+    
+    mascotFace.textContent = '😊';
+    mascotSay.textContent = 'Tarik garis dari titik rambu ke titik artinya!';
+
+    const pairs = roundsData[idx];
+    const signOrder = shuffle(pairs);
+    const meaningOrder = shuffle(pairs);
+
+    signCol.innerHTML = '';
+    meaningCol.innerHTML = '';
+
+    signOrder.forEach(item=>{
+      const card = document.createElement('div');
+      card.className = 'sign-card';
+      card.dataset.id = item.id;
+      card.innerHTML = `<img src="${item.img}" alt="Rambu" /><div class="connect-dot"></div>`;
+      signCol.appendChild(card);
+    });
+
+    meaningOrder.forEach(item=>{
+      const card = document.createElement('div');
+      card.className = 'meaning-card';
+      card.dataset.id = item.id;
+      card.innerHTML = `<div class="connect-dot"></div>${item.meaning}`;
+      meaningCol.appendChild(card);
+    });
+
+    setTimeout(resizeCanvas, 50);
+  }
+
+  /* ---------------- DRAG LOGIC ---------------- */
+  function getEventPos(e) {
+    const rect = boardContainer.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      clientX: clientX,
+      clientY: clientY
+    };
+  }
+
+  function onDragStart(e) {
+    const card = e.target.closest('.sign-card');
+    if (!card || card.classList.contains('matched')) return;
+
+    isDragging = true;
+    activeSignEl = card;
+    card.classList.add('dragging');
+
+    const pos = getEventPos(e);
+    currentTouchPos.x = pos.x;
+    currentTouchPos.y = pos.y;
+
+    drawLines();
+  }
+
+  function onDragMove(e) {
+    if (!isDragging) return;
+
+    const pos = getEventPos(e);
+    currentTouchPos.x = pos.x;
+    currentTouchPos.y = pos.y;
+
+    const targetEl = document.elementFromPoint(pos.clientX, pos.clientY);
+    const meaningCard = targetEl ? targetEl.closest('.meaning-card') : null;
+
+    document.querySelectorAll('.meaning-card').forEach(c => {
+      if(!c.classList.contains('matched')) c.classList.remove('hovered');
+    });
+
+    if (meaningCard && !meaningCard.classList.contains('matched')) {
+      meaningCard.classList.add('hovered');
+    }
+
+    drawLines();
+  }
+
+  function onDragEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    if (activeSignEl) {
+      activeSignEl.classList.remove('dragging');
+    }
+
+    const targetEl = document.elementFromPoint(
+      e.changedTouches ? e.changedTouches[0].clientX : e.clientX,
+      e.changedTouches ? e.changedTouches[0].clientY : e.clientY
+    );
+
+    const meaningCard = targetEl ? targetEl.closest('.meaning-card') : null;
+
+    document.querySelectorAll('.meaning-card').forEach(c => c.classList.remove('hovered'));
+
+    if (meaningCard && !meaningCard.classList.contains('matched')) {
+      connections = connections.filter(c => c.fromEl !== activeSignEl && c.toEl !== meaningCard);
+
+      connections.push({
+        fromEl: activeSignEl,
+        toEl: meaningCard,
+        status: 'pending'
+      });
+
+      activeSignEl.classList.add('connected');
+      meaningCard.classList.add('connected');
+
+      connectedNumEl.textContent = connections.length;
+
+      if (connections.length === PER_ROUND) {
+        checkBtn.disabled = false;
+        mascotFace.textContent = '🤔';
+        mascotSay.textContent = 'Semua terhubung! Ketuk Cek Jawaban untuk melihat hasilnya.';
+      } else {
+        mascotFace.textContent = '👍';
+        mascotSay.textContent = 'Bagus! Lanjutkan menghubungkan sisanya.';
+      }
+    }
+
+    activeSignEl = null;
+    drawLines();
+  }
+
+  boardContainer.addEventListener('mousedown', onDragStart);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+
+  boardContainer.addEventListener('touchstart', onDragStart, { passive: false });
+  window.addEventListener('touchmove', onDragMove, { passive: false });
+  window.addEventListener('touchend', onDragEnd);
+
+  /* ---------------- CEK JAWABAN LOGIC ---------------- */
+  checkBtn.addEventListener('click', () => {
+    let hasWrong = false;
+
+    connections.forEach(conn => {
+      const fromId = conn.fromEl.dataset.id;
+      const toId = conn.toEl.dataset.id;
+
+      if (fromId === toId) {
+        conn.status = 'correct';
+        conn.fromEl.classList.add('correct', 'matched');
+        conn.toEl.classList.add('correct', 'matched');
+      } else {
+        conn.status = 'wrong';
+        conn.fromEl.classList.add('wrong', 'shake');
+        conn.toEl.classList.add('wrong', 'shake');
+        hasWrong = true;
+        mistakes++;
+      }
+    });
+
+    drawLines();
+
+    if (!hasWrong) {
+      mascotFace.textContent = '🥳';
+      mascotSay.textContent = 'Hebat! Semua jawabanmu benar!';
+      spawnConfetti(20);
+      checkBtn.disabled = true;
+      setTimeout(onRoundComplete, 1200);
+    } else {
+      mascotFace.textContent = '😌';
+      mascotSay.textContent = 'Ada jawaban yang belum tepat (merah). Coba perbaiki!';
+      checkBtn.disabled = true;
+
+      setTimeout(() => {
+        connections = connections.filter(c => {
+          if (c.status === 'wrong') {
+            c.fromEl.classList.remove('wrong', 'shake', 'connected');
+            c.toEl.classList.remove('wrong', 'shake', 'connected');
+            return false;
+          }
+          return true;
+        });
+
+        connectedNumEl.textContent = connections.length;
+        drawLines();
+      }, 1200);
+    }
+  });
+
+  /* ---------------- FLOW GAME ---------------- */
+  function onRoundComplete(){
+    if(currentRound >= ROUNDS - 1){
+      modalTitle.textContent = 'Semua Papan Selesai!';
+      modalText.textContent = 'Kerja bagus! Semua rambu berhasil kamu hubungkan.';
+      modalNextBtn.textContent = 'Lihat Hasil 🏆';
+    } else {
+      modalTitle.textContent = `Papan ${currentRound+1} Selesai!`;
+      modalText.textContent = 'Semua rambu di papan ini berhasil dicocokkan.';
+      modalNextBtn.textContent = 'Lanjut ➜';
+    }
+    overlay.classList.add('active');
+  }
+
+  modalNextBtn.addEventListener('click', ()=>{
+    overlay.classList.remove('active');
+    if(currentRound >= ROUNDS - 1){
+      showEnd();
+    } else {
+      currentRound++;
+      startRound(currentRound);
+    }
+  });
+
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    startScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    prepareGame();
+    startRound(0);
+  });
+
+  document.getElementById('againBtn').addEventListener('click', ()=>{
+    endScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    prepareGame();
+    startRound(0);
+  });
+
+  function showEnd(){
+    gameScreen.classList.remove('active');
+    endScreen.classList.add('active');
+    document.getElementById('finalMistakes').textContent = mistakes;
+    let stars = 3;
+    if(mistakes > 6) stars = 1;
+    else if(mistakes > 2) stars = 2;
+    document.getElementById('starsRow').textContent = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+    let msg = 'Ayo terus berlatih mengenal rambu lalu lintas!';
+    if(stars === 3) msg = 'Luar biasa! Kamu jago mengenal rambu lalu lintas!';
+    else if(stars === 2) msg = 'Bagus sekali! Sedikit lagi jadi ahli rambu lalu lintas!';
+    document.getElementById('finalMsg').textContent = msg;
+    if(stars === 3) spawnConfetti(30);
+  }
+
+})();
+</script>
+</body>
+</html>
